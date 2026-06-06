@@ -1,0 +1,11 @@
+{
+  "author" : "Bott",
+  "description" : "ROMs not included.",
+  "friendlyName" : "Gameboy/GBC Emulator",
+  "link" : "",
+  "name" : "gbemu",
+  "steamContentId" : "",
+  "tags" : "Miscellaneous",
+  "version" : "1",
+  "requires": ["terraliblite"]
+}

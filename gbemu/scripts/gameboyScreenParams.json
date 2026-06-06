@@ -1,0 +1,194 @@
+{
+    "touchDamage" : {
+      "poly" : [[0,0]]	,
+      "damage" : 0,
+
+      "teamType" : "enemy",
+      "damageType": "IgnoresDef",
+      "damageSourceKind" : "impact",
+      "knockback" : 0,
+      "statusEffects" : [ ]
+    },
+
+    "metaBoundBox" : [-4, -4, 4, 4],
+    
+    "movementSettings" : {
+      "collisionEnabled": false,
+      "collisionPoly" : [
+        [
+          -10,
+          9
+        ],
+        [
+          10,
+          9
+        ],
+        [
+          10,
+          -9
+        ],
+        [
+          -10,
+          -9
+        ]
+      ],
+
+      "mass" : 2.0,
+      "walkSpeed" : 35,
+      "runSpeed" : 35,
+
+      "bounceFactor" : 0,
+      "groundFriction" : 10,
+      "gravityEnabled" : false,
+
+      "airFriction" : 0,
+      "liquidFriction": 0,
+      "liquidBuoyancy": 0.0
+    },
+    
+    "initialScriptDelta": 1,
+    "clientEntityMode": "clientMasterAllowed",
+    "facingMode": "transformation",
+    "level": 1,
+    
+    "bodyMaterialKind" : "robotic",
+    
+    "stunDamageSuppression" : 0.2,
+    
+    "scripts":[
+      "/scripts/gameboyScreen.lua"
+    ],
+
+    "statusSettings" : {
+      "statusProperties" : {
+        "targetMaterialKind" : "robotic"
+      },
+
+      "appliesEnvironmentStatusEffects" : false,
+      "appliesWeatherStatusEffects" : false,
+      "minimumLiquidStatusEffectPercentage" : 0.1,
+
+      "primaryScriptSources" : [
+        "/stats/terra_null_primary.lua"
+      ],
+      "primaryScriptDelta" : 1,
+
+      "stats" : {
+        "statusImmunity" : {
+          "baseValue" : 1.0
+        },
+        "invulnerable" : {
+          "baseValue" : 1.0
+        }
+      },
+
+      "resources" : {}
+    },
+    "renderLayer": "ForegroundEntity+5",
+    
+    "animationCustom":{
+        "globalTagDefaults" : {
+            "screen00" : "/assetmissing.png",
+            "screen01" : "/assetmissing.png",
+            "screen02" : "/assetmissing.png",
+            "screen03" : "/assetmissing.png",
+            "screen04" : "/assetmissing.png",
+            "screen05" : "/assetmissing.png"
+        },
+        "animatedParts" : {
+            "stateTypes" : {
+                "droneState": {
+                    "default" : "null",
+                    "states": {
+                    "null": {},
+                    "active": {
+                        "properties": {
+                        "persistentSound": ""
+                        }
+                    }
+                    }
+                }
+            },
+            "parts":{
+                "screen00" : {
+                    "properties" : {
+                        "transformationGroups": ["body","screen00"],
+                        "offset" : [0, -7.5],
+                        "center" : [0, 0],
+                        "fullbright": true,
+                        "zLevel" : 2,
+                        "image" : "<screen00>"
+                    }
+                },
+                "screen01" : {
+                    "properties" : {
+                        "transformationGroups": ["body","screen01"],
+                        "offset" : [0, -4.5],
+                        "center" : [0, 0],
+                        "fullbright": true,
+                        "zLevel" : 2,
+                        "image" : "<screen01>"
+                    }
+                },
+                "screen02" : {
+                    "properties" : {
+                        "transformationGroups": ["body","screen02"],
+                        "offset" : [0, -1.5],
+                        "center" : [0, 0],
+                        "fullbright": true,
+                        "zLevel" : 2,
+                        "image" : "<screen02>"
+                    }
+                },
+                "screen03" : {
+                    "properties" : {
+                        "transformationGroups": ["body","screen03"],
+                        "offset" : [0, 1.5],
+                        "center" : [0, 0],
+                        "fullbright": true,
+                        "zLevel" : 2,
+                        "image" : "<screen03>"
+                    }
+                },
+                "screen04" : {
+                    "properties" : {
+                        "transformationGroups": ["body","screen04"],
+                        "offset" : [0, 4.5],
+                        "center" : [0, 0],
+                        "fullbright": true,
+                        "zLevel" : 2,
+                        "image" : "<screen04>"
+                    }
+                },
+                "screen05" : {
+                    "properties" : {
+                        "transformationGroups": ["body","screen05"],
+                        "offset" : [0, 7.5],
+                        "center" : [0, 0],
+                        "fullbright": true,
+                        "zLevel" : 2,
+                        "image" : "<screen05>"
+                    }
+                }
+            }
+        },
+
+        "transformationGroups" : {
+            "body" : { "interpolated" : true },
+            "screen00" : { "interpolated" : false },
+            "screen01" : { "interpolated" : false },
+            "screen02" : { "interpolated" : false },
+            "screen03" : { "interpolated" : false },
+            "screen04" : { "interpolated" : false },
+            "screen05" : { "interpolated" : false }
+        },
+        "effects" : {
+        },
+        "particleEmitters" : null,
+        "lights" : {
+        },
+
+        "sounds" : {
+        }
+    }
+} 

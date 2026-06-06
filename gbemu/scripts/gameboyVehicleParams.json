@@ -1,0 +1,117 @@
+{
+    
+    "animation" : "/monsters/mechdrone/multidrone/mechmultidrone.animation",
+    
+    "movementSettings" : {
+      "collisionPoly": [
+        [
+          -1,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          -1,
+          -1
+        ]
+      ],
+      "collisionEnabled": false,
+
+      "mass" : 2.0,
+      "walkSpeed" : 35,
+      "runSpeed" : 35,
+
+      "bounceFactor" : 0,
+      "groundFriction" : 10,
+      "gravityEnabled" : false,
+
+      "airFriction" : 0,
+      "liquidFriction": 0,
+      "liquidBuoyancy": 0.0
+    },
+    
+    "script": "/scripts/gameboyVehicle.lua",
+    "scriptDelta": 1,
+    "clientEntityMode": "clientMasterAllowed",
+    
+    "animationCustom":{
+      "globalTagDefaults" : {
+      },
+      "animatedParts" : {
+        "stateTypes" : {
+          "droneState": {
+            "default" : "null",
+            "states": {
+              "null": {},
+              "active": {
+                "properties": {
+                  "persistentSound": ""
+                }
+              }
+            }
+          },
+          "seat": {
+            "default" : "empty",
+            "states": {
+              "empty": {},
+              "occupied": {}
+            }
+          }
+        },
+        "parts":{
+          "seat": {
+            "properties" : {
+              "transformationGroups": ["body"],
+              "offset" : [0, 0],
+              "seat" : [0, 0],
+              "zLevel" : 4
+            },
+            "partStates": {
+              "seat": {
+                "empty": {
+                  "properties": {
+                    "image": "/objects/hylotl/arcadeblue/arcadeblueleft.png:default.0"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "transformationGroups" : {
+        "body" : { "interpolated" : true }
+      },
+      "effects" : {
+      },
+      "particleEmitters" : null,
+      "lights" : {
+      },
+
+      "sounds" : {
+        "fire" : []
+      }
+    },
+    "physicsCollisions": {
+      "platform": {
+        "enabled": false
+      }
+    },
+    "loungePositions": {
+      "seat": {
+        "part": "seat",
+        "partAnchor": "seat",
+        "orientation": "stand",
+        "statusEffects": [
+          "invulnerable"
+        ],
+        "cameraFocus": false
+      }
+    }
+} 

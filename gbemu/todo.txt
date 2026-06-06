@@ -1,0 +1,12 @@
+- most of the remaining rom mappers
+    - MBC6
+    - MBC7
+    - MMM01
+    - HUC3
+    
+    - WisdomTree
+    - EMS
+    - Bung
+- fix that one issue in Link's Awakening DX (Link glitching near flying heart)
+    - timing maybe? writes failing to happen?
+    - may have some relation to odd RST 38h crash visual behaviour (when OAM DMA prevents writes to IO registers)

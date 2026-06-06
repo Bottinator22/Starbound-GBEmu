@@ -1,0 +1,149 @@
+{
+    
+    "animation" : "/monsters/mechdrone/multidrone/mechmultidrone.animation",
+    
+    "movementSettings" : {
+      "collisionPoly": [
+        [
+          -10,
+          9
+        ],
+        [
+          10,
+          9
+        ],
+        [
+          10,
+          -15
+        ],
+        [
+          -10,
+          -15
+        ]
+      ],
+      "collisionEnabled": false,
+
+      "mass" : 2.0,
+      "walkSpeed" : 35,
+      "runSpeed" : 35,
+
+      "bounceFactor" : 0,
+      "groundFriction" : 10,
+      "gravityEnabled" : false,
+
+      "airFriction" : 0,
+      "liquidFriction": 0,
+      "liquidBuoyancy": 0.0
+    },
+    
+    "script": "/scripts/gameboyVehicle.lua",
+    "scriptDelta": 1,
+    "clientEntityMode": "clientMasterAllowed",
+    
+    "animationCustom":{
+      "globalTagDefaults" : {
+        "screen00" : "/assetmissing.png",
+        "screen01" : "/assetmissing.png",
+        "screen10" : "/assetmissing.png",
+        "screen11" : "/assetmissing.png"
+      },
+      "animatedParts" : {
+        "stateTypes" : {
+          "droneState": {
+            "default" : "null",
+            "states": {
+              "null": {},
+              "active": {
+                "properties": {
+                  "persistentSound": ""
+                }
+              }
+            }
+          }
+        },
+        "parts":{
+          "screen00" : {
+            "properties" : {
+              "transformationGroups": ["body","screen00"],
+              "offset" : [-5, -4.5],
+              "center" : [0, 0],
+              "fullbright": true,
+              "zLevel" : 2,
+              "image" : "<screen00>"
+            }
+          },
+          "screen01" : {
+            "properties" : {
+              "transformationGroups": ["body","screen01"],
+              "offset" : [-5, 4.5],
+              "center" : [0, 0],
+              "fullbright": true,
+              "zLevel" : 2,
+              "image" : "<screen01>"
+            }
+          },
+          "screen10" : {
+            "properties" : {
+              "transformationGroups": ["body","screen10"],
+              "offset" : [5, -4.5],
+              "center" : [0, 0],
+              "fullbright": true,
+              "zLevel" : 2,
+              "image" : "<screen10>"
+            }
+          },
+          "screen11" : {
+            "properties" : {
+              "transformationGroups": ["body","screen11"],
+              "offset" : [5, 4.5],
+              "center" : [0, 0],
+              "fullbright": true,
+              "zLevel" : 2,
+              "image" : "<screen11>"
+            }
+          },
+          "seat": {
+            "properties" : {
+              "transformationGroups": ["body"],
+              "offset" : [0, -12],
+              "seat" : [0, 0],
+              "zLevel" : 4
+            }
+          }
+        }
+      },
+
+      "transformationGroups" : {
+        "body" : { "interpolated" : true },
+        "screen00" : { "interpolated" : true },
+        "screen01" : { "interpolated" : true },
+        "screen10" : { "interpolated" : true },
+        "screen11" : { "interpolated" : true }
+      },
+      "effects" : {
+      },
+      "particleEmitters" : null,
+      "lights" : {
+      },
+
+      "sounds" : {
+        "fire" : []
+      }
+    },
+    "physicsCollisions": {
+      "platform": {
+        "enabled": false
+      }
+    },
+    "loungePositions": {
+      "seat": {
+        "part": "seat",
+        "partAnchor": "seat",
+        "orientation": "stand",
+        "statusEffects": [
+          "invulnerable"
+        ],
+        "cameraFocus": false
+      }
+    }
+} 

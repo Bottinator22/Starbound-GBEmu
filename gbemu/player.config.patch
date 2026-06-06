@@ -1,0 +1,3 @@
+[
+{ "op" : "add", "path" : "/genericScriptContexts/gameboySpawner", "value" : "/scripts/gameboySpawner.lua" }
+]
