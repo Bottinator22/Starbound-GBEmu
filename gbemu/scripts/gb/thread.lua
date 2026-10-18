@@ -59,9 +59,24 @@ function init()
     message.setHandler("setInput",function(_,_,i)
         gb.setInput(i)
     end)
+    message.setHandler("corrupt",function(_,_,n)
+        for i=1,n do
+            -- flip a random bit
+            local bit = math.random(0,7)
+            if math.random() < 0.4 then
+                -- random direct write to WRAM, random banks
+                local addr = math.random(0x0000,0x7fff)
+                gb.wramWrite(addr,gb.wramRead(addr) ~ (1 << bit))
+            else
+                -- random write to RAM
+                local addr = math.random(0x7fff,0xff7f)
+                gb.memWrite(addr,gb.memRead(addr) ~ (1 << bit))
+            end
+        end
+    end)
     script.setUpdateDelta(1)
 end
-function update()
+function update(dt)
     if not cpuTester then
         updateDelay = updateDelay - 1
         if updateDelay <= 0 then

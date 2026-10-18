@@ -213,13 +213,14 @@ end]]
 
 -- memRead ommitted since it isn't needed here
 
-local function commitWrites(w)
-    for k,v in next, w do
-        memWrite(v[1],v[2],v[3],v[4])
+local function commitWrites(w,n)
+    for i=1,n do
+        local v = w[i]
+        memWrite(v[1],v[2],v[3])
     end
 end
 
-function memWrite(addr,v,drawing,vramBank)
+function memWrite(addr,v,vramBank)
     if addr <= 0x007f then
         -- direct colour ram index, exclusive to here
         colourMem[addr+1] = v
@@ -369,7 +370,6 @@ function memWrite(addr,v,drawing,vramBank)
         --end
         if addr == 0xff6c then
             oamOrdering = v & 0x01
-            sb.setLogMap("gbppu_r_oamOrdering",string.format("%d",oamOrdering))
         end
     end
 end
@@ -535,60 +535,59 @@ function init()
     message.setHandler("setGBMode",function(_,_,t)
         setGBMode(t)
     end)
+    
     message.setHandler("frameskipWrites",function(_,_,writes)
         if gbMode == -1 then
             return
         end
         -- just update memory, don't draw a frame
-        local n = 0
-        if writes.vblank then
-            n = n + #writes.vblank
-            commitWrites(writes.vblank)
+        local n = #writes
+        for i=1,n,3 do
+            commitWrites(writes[i+1],writes[i+2])
         end
-        for scanline=0,vblank-1 do
-            local w = writes[string.format("sl_%d",scanline)]
-            if w then
-                n = n + #w
-                commitWrites(w)
-            end
-        end
-        sb.setLogMap("gbppu_r_writes",string.format("%d",n))
     end)
+    
+    local lineObjs = {}
     message.setHandler("doFrame",function(_,_,writes)
         if gbMode == -1 then
             return nil
         end
         local time = os.clock()
         -- do the entire fragment of the frame here
-        local nw = 0
-        if writes.vblank then
-            nw = nw + #writes.vblank
-            commitWrites(writes.vblank)
-        end
+        
         local winCounter = 0
-        for scanline=0,minY-1 do
-            local w = writes[string.format("sl_%d",scanline)]
-            if w then
-                nw = nw + #w
-                commitWrites(w)
-            end
+        local currentScanline = 0
+        local nextWritesScanline = writes[1] or math.maxinteger
+        local nextWrites = 1
+        while minY-1 >= nextWritesScanline do
+            -- update the window too
+            local maxScanline = nextWritesScanline
             local winVisible = windowEnabled and windowY >= 0 and windowY <= 143 and windowX >= 0 and windowX <= 166
-            if winVisible and scanline >= windowY then
-                winCounter = winCounter + 1
+            if winVisible and maxScanline > windowY then
+                winCounter = winCounter + maxScanline-math.max(currentScanline,windowY)
             end
+            currentScanline = maxScanline
+            
+            commitWrites(writes[nextWrites+1],writes[nextWrites+2])
+            nextWrites = nextWrites + 3
+            nextWritesScanline = writes[nextWrites] or math.maxinteger 
+        end
+        
+        local winVisible = windowEnabled and windowY >= 0 and windowY <= 143 and windowX >= 0 and windowX <= 166
+        if winVisible and minY > windowY then
+            winCounter = winCounter + minY-math.max(currentScanline,windowY)
         end
         
         for scanline=minY,maxY-1 do
-            local w = writes[string.format("sl_%d",scanline)]
-            if w then
-                nw = nw + #w
-                commitWrites(w)
+            if scanline >= nextWritesScanline then
+                commitWrites(writes[nextWrites+1],writes[nextWrites+2])
+                nextWrites = nextWrites + 3
+                nextWritesScanline = writes[nextWrites] or math.maxinteger
             end
             
             local forcedObjPriority = not bgEnabled and (gbMode == 1)
             local bgActualEnabled = bgEnabled or (gbMode == 1)
             
-            local lineObjs = {}
             local nLineObjs = 0
             local nLineObjsFull = 0
             if objEnabled then
@@ -598,7 +597,7 @@ function init()
                         nLineObjsFull = nLineObjsFull + 1
                         if v[2] > minX and v[2] <= maxX+8 then
                             nLineObjs = nLineObjs + 1
-                            table.insert(lineObjs,v)
+                            lineObjs[nLineObjs] = v
                         end
                         if nLineObjsFull >= 10 then
                             break
@@ -608,6 +607,9 @@ function init()
             end
             -- I'd like to make this more efficient but hard to do so without overburdening the per-pixel code
             if oamOrdering == 1 or gbMode == 0 then
+                for i=nLineObjs+1,10 do
+                    lineObjs[i] = nil
+                end
                 table.sort(lineObjs,sortObjects0)
             else
                 -- don't sort, just leave it to be by OAM index
@@ -641,8 +643,8 @@ function init()
                         local bgIndexX = (bgX//8)%32
                         local bgI = bgIndexY*32+bgIndexX
                         local bgTileX = 7-(bgX%8)
-                        local bgTileY = bgY%8
                         local bgTile = backgrounds[bgSelect+1][bgI+1]
+                        local bgTileY = bgY%8
                         local bgBank = 1
                         if tileIndexMode == 0 then
                             bgTile = 256 + sign8(bgTile)
@@ -670,8 +672,8 @@ function init()
                         if winIndexX >= 0 and winIndexY >= 0 and winIndexX < 32 and winIndexY2 < 32 then
                             local winI = winIndexY2*32+winIndexX
                             local winTileX = 7-(winX%8)
-                            local winTileY = winY2%8
                             local winTile = backgrounds[windowSelect+1][winI+1]
+                            local winTileY = winY2%8
                             local winBank = 1
                             if tileIndexMode == 0 then
                                 winTile = 256 + sign8(winTile)
@@ -769,14 +771,10 @@ function init()
                 end
             end
         end
-        for scanline=maxY,vblank-1 do
-            local w = writes[string.format("sl_%d",scanline)]
-            if w then
-                nw = nw + #w
-                commitWrites(w)
-            end
+        local nwr = #writes
+        for i=nextWrites,nwr,3 do
+            commitWrites(writes[i+1],writes[i+2])
         end
-        sb.setLogMap("gbppu_r_writes",string.format("%d",nw))
         
         --[[
         sb.setLogMap("gbppu_r_scanline",string.format("%d",scanline))

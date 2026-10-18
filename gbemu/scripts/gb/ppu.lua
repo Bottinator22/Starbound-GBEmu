@@ -7,20 +7,18 @@ local function join(a,b)
 end
 -- I use M-cycles here
 
-local maxRequestedFrames = 1
-
--- DMA should take either 160 or 640 mcycles, likely the former
 function initPpu(bus,cpu)
     local renderThread = threads.create({
             name="gameboyRendererDistributor",
             scripts={
                 main={"/scripts/gb/rendererDistThread.lua"}
             },
-            tickRate=120,
+            logMapped=false,
+            tickRate=240,
             instructionLimit=1000000000,
         })
         
-    local framePromises = {}
+    local framePromise
         
     local ppu = {}
     local vram = {} -- storage only
@@ -36,30 +34,28 @@ function initPpu(bus,cpu)
     local frameWrites = {}
     local totalFrameWrites = 0
     local function storeWrites(sl)
-        if #writes > 0 then
+        -- expects to be done in order
+        local n = #writes
+        if n > 0 then
+            table.insert(frameWrites,sl)
+            table.insert(frameWrites,writes)
+            table.insert(frameWrites,n)
+            --[[
             if sl == -1 then
-                --[[
-                if frameWrites.vblank then
-                    sb.logWarn("PPU overwriting VBlank writes!")
-                end]]
                 frameWrites.vblank = writes
             else
-                --[[
-                if frameWrites[string.format("sl_%d",sl)] then
-                    sb.logWarn(string.format("PPU overwriting scanline %d writes!",sl))
-                end]]
                 frameWrites[string.format("sl_%d",sl)] = writes
-            end
-            totalFrameWrites = totalFrameWrites + #writes
+            end]]
+            totalFrameWrites = totalFrameWrites + n
             writes = {}
         end
     end
     local requestedFrames = 0
     local function requestFrame()
-        if #framePromises >= maxRequestedFrames then
+        if framePromise and not (sb.makePromise and framePromise:finished()) then
             threads.sendMessage(renderThread,"writes",frameWrites,true)
         else
-            table.insert(framePromises,threads.sendMessage(renderThread,"writes",frameWrites,false))
+            framePromise = threads.sendMessage(renderThread,"writes",frameWrites,false)
         end
         frameWrites = {}
         requestedFrames = requestedFrames + 1
@@ -210,6 +206,11 @@ function initPpu(bus,cpu)
         end
     end
     function ppu.write(addr,v)
+        --[[
+        -- beautiful...
+        if math.random() < 0.125 then
+            v = v ~ (1 << math.random(0,7))
+        end]]
         if addr <= 0x9fff then
             -- vram
             if mode == 3 and lcdOn then
@@ -217,7 +218,7 @@ function initPpu(bus,cpu)
             end
             local i = addr & 0x1fff
             vram[i+1+vramBank*0x2000] = v
-            table.insert(writes,{addr,v,false,vramBank+1})
+            table.insert(writes,{addr,v,vramBank+1})
         elseif addr <= 0xfe9f then
             -- oam
             if (mode == 3 or mode == 2) and lcdOn then
@@ -228,7 +229,7 @@ function initPpu(bus,cpu)
             oam[i+1] = v
             table.insert(writes,{addr,v})
         else
-            table.insert(writes,{addr,v,mode == 3 and lcdOn})
+            table.insert(writes,{addr,v})
             --sb.setLogMap("gbppu_iowrite",string.format("%04x=%02x",addr,v))
             if addr == 0xff47 then
                 palettes = v
@@ -292,7 +293,7 @@ function initPpu(bus,cpu)
                     colourBAutoInc = (v & 0x80) > 0
                 elseif addr == 0xff69 then
                     if mode ~= 3 or not lcdOn then
-                        table.insert(writes,{colourBAddr,v,mode == 3 and lcdOn})
+                        table.insert(writes,{colourBAddr,v})
                         colourMem[colourBAddr+1] = v
                     end
                     if colourBAutoInc then
@@ -303,7 +304,7 @@ function initPpu(bus,cpu)
                     colourSAutoInc = (v & 0x80) > 0
                 elseif addr == 0xff6b then
                     if mode ~= 3 or not lcdOn then
-                        table.insert(writes,{colourSAddr+64,v,mode == 3 and lcdOn})
+                        table.insert(writes,{colourSAddr+64,v})
                         colourMem[colourSAddr+65] = v
                     end
                     if colourSAutoInc then
@@ -331,6 +332,9 @@ function initPpu(bus,cpu)
                 end
             end
         end
+    end
+    function ppu.anyStatInterrupts()
+        return lcdOn and ((lycInterrupt and lyc <= vblankEnd) or oamInterrupt or hblankInterrupt or vblankInterrupt)
     end
     
     function ppu.vdma()
@@ -536,7 +540,6 @@ function initPpu(bus,cpu)
         sb.setLogMap("gbppu_statint_lyc_c",string.format("%d",lyc))
         
         ]]
-        sb.setLogMap("gbppu_waitingFrames",string.format("%d",#framePromises))
         
         --sb.setLogMap("gbppu_phase",string.format("%s",phase))
         --[[
@@ -549,8 +552,7 @@ function initPpu(bus,cpu)
         ]]
     end
     
-    -- GBC doesn't need to render every frame as long as game logic runs in background
-    -- note: if just sending the entirety of VRAM is more efficient than sending the data to render, and processing at the other end is more efficient, do so
+    -- GBC doesn't need to render every frame as long as game logic runs in background and VRAM writes are still accounted for
     local drawables
     function ppu.getFrame()
         --[[
@@ -558,23 +560,27 @@ function initPpu(bus,cpu)
             drawables[k] = string.format(drawable,table.unpack(v))
         end
         ]]
-        local nFramePromises = {}
-        for k,v in next, framePromises do
-            if v:finished() then
-                if v:succeeded() and v:result() then
-                    drawables = v:result()
+        if sb.makePromise then
+            return framePromise
+        else
+            if framePromise then
+                if framePromise:finished() then
+                    if framePromise:succeeded() then
+                        drawables = framePromise:result()
+                    end
+                    framePromise = nil
                 end
-            else
-                table.insert(nFramePromises,v)
             end
+            return drawables
         end
-        framePromises = nFramePromises
-        return drawables
     end
     function ppu.getRequestedFrames()
         local out = requestedFrames
         requestedFrames = 0
         return out
+    end
+    function ppu.lcdOn()
+        return lcdOn
     end
     return ppu
 end

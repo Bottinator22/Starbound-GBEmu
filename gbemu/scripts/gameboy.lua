@@ -16,15 +16,18 @@ function gameboy.new(name)
         }),
         frame=nil
     }
+    local savePromise
     local promises = {}
     function gb.save(key,onFinish)
         local promise = threads.sendMessage(gb.thread,"getSave")
         if key then
+            savePromise = promise
             table.insert(promises,{promise=promise,onFinish=function(save)
                 storage[key] = save
                 if onFinish then
                     onFinish(save)
                 end
+                savePromise = nil
             end})
         end
         return promise
@@ -47,7 +50,7 @@ function gameboy.new(name)
         end
         promises = newPromises
         if destroyOnResolve then
-            if #promises == 0 then
+            if not savePromise or savePromise:finished() then
                 threads.stop(gb.thread)
                 destroyed = true
             end
@@ -91,6 +94,9 @@ function gameboy.new(name)
     end
     function gb.writeMem(addr,v)
         threads.sendMessage(gb.thread,"memWrite",addr,v)
+    end
+    function gb.corrupt(i)
+        return threads.sendMessage(gb.thread,"corrupt",i)
     end
     function gb.loadRom(rom,save)
         threads.sendMessage(gb.thread,"load",rom,save)

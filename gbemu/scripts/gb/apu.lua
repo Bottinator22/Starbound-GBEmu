@@ -13,6 +13,7 @@ function initApu()
             scripts={
                 main={"/scripts/gb/soundThread.lua"}
             },
+            logMapped=false,
             tickRate=120,
             instructionLimit=100000000,
         })

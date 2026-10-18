@@ -32,7 +32,8 @@ function init()
                 scripts={
                     main={"/scripts/gb/rendererFragmentThread.lua"}
                 },
-                tickRate=120,
+                logMapped=false,
+                tickRate=240,
                 instructionLimit=100000000,
                 gbRenderName=n,
                 xIndex=x,
@@ -56,11 +57,34 @@ function init()
             for k,v in next, subThreads do
                 threads.sendMessage(v,"frameskipWrites",writes)
             end
+            local nw = 0
+            local lastScanline = -2
+            for i=1,#writes,3 do
+                nw = nw + writes[i+2]
+                if writes[i] < lastScanline then
+                    sb.logWarn(string.format("PPU writes went backwards! %d < %d", writes[i], lastScanline))
+                end
+                lastScanline = writes[i]
+            end
+            sb.setLogMap("gbppu_r_writes",string.format("%d",nw))
         else
+            local time = os.clock()
             local p = {}
             for k,v in next, subThreads do
-                table.insert(p,threads.sendMessage(v,"doFrame",writes))
+                table.insert(p,threads.sendMessage(v,"doFrame",writes,vblankWrites))
             end
+            -- do a little misc debugging work while they render
+            local nw = 0
+            local lastScanline = -2
+            for i=1,#writes,3 do
+                nw = nw + writes[i+2]
+                if writes[i] < lastScanline then
+                    sb.logWarn(string.format("PPU writes went backwards! %d < %d", writes[i], lastScanline))
+                end
+                lastScanline = writes[i]
+            end
+            sb.setLogMap("gbppu_r_writes",string.format("%d",nw))
+            -- wait for them to finish via spinning
             while not (p[1]:finished() and p[2]:finished() and p[3]:finished() and p[4]:finished() and p[5]:finished() and p[6]:finished()) do
             end
             if p[1]:succeeded() and p[2]:succeeded() and p[3]:succeeded() and p[4]:succeeded() and p[5]:succeeded() and p[6]:succeeded() then
@@ -72,6 +96,7 @@ function init()
                 drawables[6] = p[6]:result()
                 frames = frames + 1
             end
+            sb.setLogMap("gbppu_dist_renderTime",string.format("%.4f",os.clock()-time))
             if drawables[1] and drawables[2] and drawables[3] and drawables[4] and drawables[5] and drawables[6] then
                 return drawables
             end

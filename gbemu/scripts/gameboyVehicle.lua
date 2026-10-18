@@ -54,6 +54,7 @@ local doingWeirdStuff = false
 function toggleWeirdStuff()
     doingWeirdStuff = not doingWeirdStuff
 end
+local allowDamageCorruption = false
 function update(dt)
     gb.update()
     if gb.dead() then
@@ -133,6 +134,11 @@ function update(dt)
     end
     sb.setLogMap("gbvehicle_saveTimer",string.format("%d",t))
     world.callScriptedEntity(screen,"mcontroller.setPosition",vec2.add(mcontroller.position(),storage.screenOffset))
+    if allowDamageCorruption then
+        vehicle.setDamageTeam({type="passive",team=0})
+    else
+        vehicle.setDamageTeam({type="ghostly",team=0})
+    end
 end
 function saveAndDestroy()
     t = -1000000
@@ -142,9 +148,6 @@ function saveAndDestroy()
     end
     gb.destroy()
 end
-function applyDamage(damageRequest)
-    return {}
-end
 function uninit()
     if not gb.dead() then
         if gameName then
@@ -152,4 +155,33 @@ function uninit()
         end
         gb.destroyNow()
     end
+end
+function applyDamage(damageRequest)
+    if not allowDamageCorruption then
+        return {}
+    end
+    local damage = 0
+    if damageRequest.damageType == "Damage" then
+        damage = damage + math.min(damageRequest.damage,1000)
+    elseif damageRequest.damageType == "IgnoresDef" then
+        damage = damage + damageRequest.damage
+    else
+        return {}
+    end
+    
+    local bytesCorrupted = math.min(math.ceil(damage/10),300000)
+    
+    gb.corrupt(bytesCorrupted)
+
+    return {{
+        sourceEntityId = damageRequest.sourceEntityId,
+        targetEntityId = entity.id(),
+        position = mcontroller.position(),
+        damageDealt = damage,
+        healthLost = bytesCorrupted,
+        hitType = "Hit",
+        damageSourceKind = damageRequest.damageSourceKind,
+        targetMaterialKind = "robotic",
+        killed = false
+    }}
 end

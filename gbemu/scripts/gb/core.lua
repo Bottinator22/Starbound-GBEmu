@@ -125,8 +125,9 @@ local function createBus()
                 end
             elseif addr < 0xfe00 then
                 -- WRAM and ECHO
-                local i = addr & 0x1fff
-                if i < 0x1000 then
+                local i = addr & 0x0fff
+                local b = addr & 0x1000
+                if b == 0 then
                     -- bank 0
                     return wram[i+1]
                 else
@@ -203,8 +204,9 @@ local function createBus()
                 end
             elseif addr < 0xfe00 then
                 -- WRAM and ECHO
-                local i = addr & 0x1fff
-                if i < 0x1000 then
+                local i = addr & 0x0fff
+                local b = addr & 0x1000
+                if b == 0 then
                     -- bank 0
                     wram[i+1] = v
                 else
@@ -219,7 +221,7 @@ local function createBus()
                 -- I/O ports
                 local comp = ioPorts[(addr & 0x00ff) + 1]
                 if components[comp] then
-                    return components[comp].write(addr,v)
+                    components[comp].write(addr,v)
                 end
             elseif addr <= 0xffff then
                 -- HRAM and Interrupt Enable Register (0xffff)
@@ -272,6 +274,7 @@ local function createBus()
     end
     function bus.debug()
         sb.setLogMap("gbbus_dma",sb.print(dma))
+        sb.setLogMap("gbbus_wramBank",string.format("%d",wramBank))
     end
     function bus.test()
         rom.sramEnabled = true
@@ -286,6 +289,12 @@ local function createBus()
             end
         end
         rom.sramEnabled = false
+    end
+    function bus.wramRead(addr)
+        return wram[addr+1]
+    end
+    function bus.wramWrite(addr,v)
+        wram[addr+1] = v
     end
     return bus
 end
@@ -440,6 +449,8 @@ function createGB()
     end
     gb.memRead = bus.read
     gb.memWrite = bus.write
+    gb.wramRead = bus.wramRead
+    gb.wramWrite = bus.wramWrite
     function gb.loadRom(r,save)
         rom = loader.loadAsMemComponent(r,save)
         bus.setRom(rom)

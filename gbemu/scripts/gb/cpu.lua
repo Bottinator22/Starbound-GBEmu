@@ -1673,8 +1673,25 @@ function initCpu(bus,gb)
     function cpu.halted()
         return halted
     end
+    function cpu.undefined()
+        return currentInstruction == undefined
+    end
+    function cpu.call(addr)
+        call(addr)
+    end
     function cpu.exitStop()
         stopped = false
+    end
+    function cpu.enabledInterrupts()
+        if noInterrupts then
+            return 0x00
+        else
+            return ier
+        end
+    end
+    function cpu.stopHalt()
+        autoHaltExit = false
+        halted = false
     end
     function cpu.reset()
         -- reset everything to initial state

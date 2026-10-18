@@ -22,12 +22,14 @@ local sBankNums = {
     1,
     4
 }
-function loader.loadAsMemComponent(p,save)
+function loader.loadAsMemComponent(p,inSave)
     local headerOff = 0
-    save = save or {}
+    local outSave = inSave
+    save = inSave or {}
     local ds = root.assetData(p)
     local d = {}
     local sram = nil
+    local saveDirty = not save
     if save.sram then
         sram = base64ToOctets(save.sram)
     end
@@ -93,6 +95,7 @@ function loader.loadAsMemComponent(p,save)
         none=function(a,v)
             if a >= 0xa000 and sram and rom.sramEnabled then
                 sram[a-0x9FFF] = v
+                saveDirty = true
             end
         end,
         mbc1=function(a,v)
@@ -121,6 +124,7 @@ function loader.loadAsMemComponent(p,save)
             elseif sram and rom.sramEnabled then
                 -- sram
                 sram[(sramBankSize*rom.sramBank)+(a-0xa000)+1] = v
+                saveDirty = true
             end
         end,
         mbc2=function(a,v)
@@ -150,6 +154,7 @@ function loader.loadAsMemComponent(p,save)
             elseif sram and rom.sramEnabled then
                 -- sram
                 sram[(sramBankSize*rom.sramBank)+(a-0xa000)+1] = v
+                saveDirty = true
             end
         end,
         mbc3=function(a,v)
@@ -270,6 +275,7 @@ function loader.loadAsMemComponent(p,save)
                 else
                     sram[(sramBankSize*rom.sramBank)+(a-0xa000)+1] = v
                 end
+                saveDirty = true
             end
         end,
         mbc4=function(a,v)
@@ -289,6 +295,7 @@ function loader.loadAsMemComponent(p,save)
             elseif sram and rom.sramEnabled then
                 -- sram
                 sram[(sramBankSize*rom.sramBank)+(a-0xa000)+1] = v
+                saveDirty = true
             end
         end,
         mbc5=function(a,v)
@@ -317,6 +324,7 @@ function loader.loadAsMemComponent(p,save)
             elseif sram and rom.sramEnabled then
                 -- sram
                 sram[(sramBankSize*rom.sramBank)+(a-0xa000)+1] = v
+                saveDirty = true
             end
         end,
         mbc6=nil, -- TODO
@@ -345,6 +353,7 @@ function loader.loadAsMemComponent(p,save)
             elseif sram and not rom.sramIsRtc then
                 -- sram
                 sram[(sramBankSize*rom.sramBank)+(a-0xa000)+1] = v
+                saveDirty = true
             end
         end,
         huc3=nil -- TODO
@@ -591,6 +600,7 @@ function loader.loadAsMemComponent(p,save)
         sb.setLogMap("gbrom_features",features)
         sb.setLogMap("gbrom_romBank",string.format("%02x",rom.bank))
         sb.setLogMap("gbrom_sramBank",rom.sramIsRtc and (rom.timer and string.format("rtc%d",rom.rtcSelected) or "ir") or string.format("%02x",rom.sramBank))
+        sb.setLogMap("gbrom_sramChanged",sb.print(saveDirty))
         sb.setLogMap("gbrom_sramEnabled",sb.print(rom.sramEnabled))
         if rom.timer then
             sb.setLogMap("gbrom_rtcRegisters",string.format("%02x, %02x, %02x, %02x, %02x (%d selected)",
@@ -609,11 +619,15 @@ function loader.loadAsMemComponent(p,save)
         sb.logWarn(string.format("romBank: %02x", rom.bank))
     end
     function rom.getSave()
-        return {
-            sram=octetsToBase64(rom.sram),
-            rtcHalt=rom.rtcHalt,
-            rtcTime=rom.rtcHalt and rom.rtcHaltTime or rom.rtcEpoch
-        }
+        if saveDirty then
+            outSave = {
+                sram=octetsToBase64(rom.sram),
+                rtcHalt=rom.rtcHalt,
+                rtcTime=rom.rtcHalt and rom.rtcHaltTime or rom.rtcEpoch
+            }
+            saveDirty = false
+        end
+        return outSave
     end
     return rom
 end
